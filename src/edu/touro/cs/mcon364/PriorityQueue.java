@@ -7,12 +7,12 @@ import java.io.Serializable;
 import java.util.*;
 
 public class PriorityQueue<T> implements Serializable {
-    private LinkedList<ObjectWithPriority<T>> store;
-    private int capacity;
+    private transient TreeMap<Integer, LinkedList<T>> store;
+    private transient int capacity, size = 0, highestPriority = Integer.MIN_VALUE;
     private static final long serialVersionUID = 42L;
 
     PriorityQueue(int maximumSize) {
-        store = new LinkedList<>();
+        store = new TreeMap<>();
         capacity = maximumSize;
     }
 
@@ -24,24 +24,13 @@ public class PriorityQueue<T> implements Serializable {
      * @throws IllegalStateException if the queue is at maximum size
      */
     void enqueue(T item, int priority) {
-        if (store.size() == capacity)
+        if (size == capacity)
             throw new IllegalStateException("The queue is already full.");
 
-        boolean added = false;
-
-        ListIterator<ObjectWithPriority<T>> it = store.listIterator();
-        while (it.hasNext()) {
-            if (it.next().PRIORITY < priority) {
-                it.previous();
-                it.add(new ObjectWithPriority<>(priority, item));
-                added = true;
-                break;
-            }
-        }
-
-        if (!added) {
-            store.add(new ObjectWithPriority<>(priority, item));
-        }
+        store.putIfAbsent(priority, new LinkedList<>());
+        store.get(priority).add(item);
+        highestPriority = Math.max(highestPriority, priority);
+        size++;
     }
 
     /**
@@ -51,43 +40,60 @@ public class PriorityQueue<T> implements Serializable {
      * @throws NoSuchElementException if the queue has no items in it
      */
     T dequeue() {
-        if (store.isEmpty())
+        if (size == 0)
             throw new NoSuchElementException("The queue is empty.");
 
-        return store.remove().ELEMENT;
+        T el = store.get(highestPriority).remove();
+        if (store.get(highestPriority).isEmpty()) {
+            Integer i = store.lowerKey(highestPriority);
+            highestPriority = i != null ? i : Integer.MIN_VALUE;
+        }
+        size--;
+
+        return el;
     }
 
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         s.writeInt(capacity);
-        s.writeObject(store);
+        s.writeInt(store.keySet().size());
+        for (Map.Entry<Integer, LinkedList<T>> q : store.entrySet()) {
+            s.writeInt(q.getValue().size());
+            for (T t : q.getValue()) {
+                s.writeObject(t);
+            }
+            s.writeInt(q.getKey());
+        }
     }
 
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
         s.defaultReadObject();
+
         capacity = s.readInt();
-        store = (LinkedList<ObjectWithPriority<T>>) s.readObject();
+        store = new TreeMap<>();
+        size = 0;
+
+        for (int i = 0; i < s.readInt(); i++) {
+            LinkedList<T> queue = new LinkedList<>();
+            for (int j = 0; j < s.readInt(); j++) {
+                queue.add((T) s.readObject());
+                size++;
+            }
+            store.put(s.readInt(), queue);
+        }
+
+        highestPriority = store.lastKey();
     }
 
     @Override
     public String toString() {
-        Iterator<ObjectWithPriority<T>> it = store.iterator();
-        StringBuilder out = new StringBuilder("[");
-        while (it.hasNext()) {
-            out.append(it.next().ELEMENT.toString()).append(", ");
+        StringBuilder s = new StringBuilder("[");
+        for (LinkedList<T> q : store.descendingMap().values()) {
+            for (T t : q) {
+                s.append(t).append(", ");
+            }
         }
-
-        out.setLength(out.length() - 2);
-        return out.append("]").toString();
-    }
-
-    private static class ObjectWithPriority<T> implements Serializable {
-        public final int PRIORITY;
-        public final T ELEMENT;
-
-        public ObjectWithPriority(int i, T e) {
-            PRIORITY = i;
-            ELEMENT = e;
-        }
+        s.setLength(s.length() - 2);
+        return s.append(']').toString();
     }
 }
