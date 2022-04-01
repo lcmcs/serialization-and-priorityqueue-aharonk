@@ -8,7 +8,7 @@ import java.util.*;
 
 public class PriorityQueue<T> implements Serializable {
     private transient TreeMap<Integer, LinkedList<T>> store;
-    private transient int capacity, size = 0, highestPriority = Integer.MIN_VALUE;
+    private int capacity, size = 0, highestPriority = Integer.MIN_VALUE;
     private static final long serialVersionUID = 42L;
 
     PriorityQueue(int maximumSize) {
@@ -55,8 +55,8 @@ public class PriorityQueue<T> implements Serializable {
 
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
-        s.writeInt(capacity);
         s.writeInt(store.keySet().size());
+
         for (Map.Entry<Integer, LinkedList<T>> q : store.entrySet()) {
             s.writeInt(q.getValue().size());
             for (T t : q.getValue()) {
@@ -69,20 +69,19 @@ public class PriorityQueue<T> implements Serializable {
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
         s.defaultReadObject();
 
-        capacity = s.readInt();
         store = new TreeMap<>();
-        size = 0;
 
-        for (int i = 0; i < s.readInt(); i++) {
+        int numPriorities = s.readInt();
+        for (int i = 0; i < numPriorities; i++) {
             LinkedList<T> queue = new LinkedList<>();
-            for (int j = 0; j < s.readInt(); j++) {
+
+            int numElements = s.readInt();
+            for (int j = 0; j < numElements; j++) {
                 queue.add((T) s.readObject());
-                size++;
             }
+
             store.put(s.readInt(), queue);
         }
-
-        highestPriority = store.lastKey();
     }
 
     @Override
@@ -95,5 +94,22 @@ public class PriorityQueue<T> implements Serializable {
         }
         s.setLength(s.length() - 2);
         return s.append(']').toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+
+        if (o instanceof PriorityQueue) {
+            PriorityQueue<T> other = (PriorityQueue<T>) o;
+            return capacity == other.capacity &&
+                    size == other.size &&
+                    highestPriority == other.highestPriority &&
+                    store.equals(other.store);
+        }
+
+        return false;
     }
 }

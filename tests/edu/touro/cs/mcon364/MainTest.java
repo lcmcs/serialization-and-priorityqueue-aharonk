@@ -1,6 +1,8 @@
 package edu.touro.cs.mcon364;
 
 import org.junit.jupiter.api.*;
+
+import java.io.*;
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,6 +55,20 @@ class MainTest {
 
     @org.junit.jupiter.api.Test
     @Order(5)
+    void serialization() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream("tests/edu/touro/cs/mcon364/object.txt"));
+             ObjectInputStream ois = new ObjectInputStream(
+                     new FileInputStream("tests/edu/touro/cs/mcon364/object.txt"))) {
+            oos.writeObject(queue);
+            assertEquals(queue, ois.readObject());
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @org.junit.jupiter.api.Test
+    @Order(6)
     void removal() {
         for (int i = 0; i < 10; i++) {
             int x = queue.dequeue();
