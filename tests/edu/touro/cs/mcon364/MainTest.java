@@ -61,7 +61,13 @@ class MainTest {
              ObjectInputStream ois = new ObjectInputStream(
                      new FileInputStream("tests/edu/touro/cs/mcon364/object.txt"))) {
             oos.writeObject(queue);
-            assertEquals(queue, ois.readObject());
+            PriorityQueue<Integer> sameQueue = (PriorityQueue<Integer>) ois.readObject();
+            assertEquals(queue, sameQueue);
+            queue.dequeue();
+            sameQueue.dequeue();
+            queue.enqueue(1, 7);
+            sameQueue.enqueue(1, 7);
+            assertEquals(queue, sameQueue);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

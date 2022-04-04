@@ -8,10 +8,11 @@ import java.util.*;
 
 public class PriorityQueue<T> implements Serializable {
     private transient TreeMap<Integer, LinkedList<T>> store;
-    private int capacity, size = 0, highestPriority = Integer.MIN_VALUE;
+    private int capacity;
+    private transient int size = 0, highestPriority = Integer.MIN_VALUE;
     private static final long serialVersionUID = 42L;
 
-    PriorityQueue(int maximumSize) {
+    public PriorityQueue(int maximumSize) {
         store = new TreeMap<>();
         capacity = maximumSize;
     }
@@ -23,7 +24,7 @@ public class PriorityQueue<T> implements Serializable {
      * @param priority the element's priority
      * @throws IllegalStateException if the queue is at maximum size
      */
-    void enqueue(T item, int priority) {
+    public void enqueue(T item, int priority) {
         if (size == capacity)
             throw new IllegalStateException("The queue is already full.");
 
@@ -39,7 +40,7 @@ public class PriorityQueue<T> implements Serializable {
      * @return the next element in the queue
      * @throws NoSuchElementException if the queue has no items in it
      */
-    T dequeue() {
+    public T dequeue() {
         if (size == 0)
             throw new NoSuchElementException("The queue is empty.");
 
@@ -78,10 +79,13 @@ public class PriorityQueue<T> implements Serializable {
             int numElements = s.readInt();
             for (int j = 0; j < numElements; j++) {
                 queue.add((T) s.readObject());
+                size++;
             }
 
             store.put(s.readInt(), queue);
         }
+
+        highestPriority = store.lastKey();
     }
 
     @Override
